@@ -1,0 +1,10 @@
+crewai
+crewai-tools
+streamlit
+scikit-learn
+pandas
+numpy
+matplotlib
+seaborn
+python-dotenv
+pypdf

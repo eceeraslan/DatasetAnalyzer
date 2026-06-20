@@ -1,0 +1,40 @@
+{
+  "problem_type": "regression",
+  "target_column": "CO(GT)",
+  "model": "Random Forest",
+  "model_leaderboard_cv": {
+    "Linear Regression": 0.7651,
+    "Random Forest": 0.8018,
+    "Gradient Boosting": 0.7851
+  },
+  "cv_folds": 5,
+  "R\u00b2 Score": 0.9042,
+  "n_features": 14,
+  "train_size": 7485,
+  "test_size": 1872,
+  "top_features": [
+    [
+      "PT08.S2(NMHC)",
+      0.5365220430128138
+    ],
+    [
+      "NOx(GT)",
+      0.1946388640669313
+    ],
+    [
+      "C6H6(GT)",
+      0.10902371868760309
+    ],
+    [
+      "PT08.S1(CO)",
+      0.027230008181062585
+    ],
+    [
+      "NO2(GT)",
+      0.023861831712352153
+    ]
+  ],
+  "plot_path": "data/feature_importance.png",
+  "heatmap_path": "data/correlation_heatmap.png",
+  "confusion_path": null
+}
