@@ -94,6 +94,19 @@ hr                                          { border-color: #30363D !important; 
 .stFileUploader label, .stSelectbox label {
     color: #E6EDF3 !important;
 }
+
+/* Uploaded-file display (the box showing the file name after upload) */
+[data-testid="stFileUploaderFile"],
+[data-testid="stFileUploaderFile"] *,
+[data-testid="stFileUploaderFileName"],
+[data-testid="stFileUploaderDeleteBtn"] * {
+    background-color: #21262D !important;
+    color:            #E6EDF3 !important;
+}
+[data-testid="stFileUploaderFile"] {
+    border: 1px solid #30363D !important;
+    border-radius: 5px !important;
+}
 """
 
 def _inject_dark():
