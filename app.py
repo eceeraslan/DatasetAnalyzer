@@ -56,6 +56,44 @@ section[data-testid="stSidebar"]             { background-color: #161B22 !import
 .stTabs [role="tab"][aria-selected="true"]  { color: #79C0FF !important; }
 hr                                          { border-color: #30363D !important; }
 [data-testid="stAlert"] *                  { color: #E6EDF3 !important; }
+
+/* Secondary buttons (e.g. file uploader "Upload", download buttons) */
+[data-testid="stBaseButton-secondary"],
+.stDownloadButton button,
+[data-testid="stFileUploaderDropzone"] button {
+    background-color: #21262D !important;
+    color:            #E6EDF3 !important;
+    border:           1px solid #30363D !important;
+}
+[data-testid="stBaseButton-secondary"]:hover,
+.stDownloadButton button:hover {
+    background-color: #30363D !important;
+    border-color:     #79C0FF !important;
+}
+
+/* DataFrame / table */
+[data-testid="stDataFrame"],
+[data-testid="stDataFrame"] * {
+    background-color: #161B22 !important;
+    color:            #E6EDF3 !important;
+}
+[data-testid="stDataFrame"] [role="columnheader"] {
+    background-color: #21262D !important;
+    color:            #E6EDF3 !important;
+}
+
+/* Selectbox / dropdown inputs */
+.stSelectbox div[data-baseweb="select"] > div {
+    background-color: #21262D !important;
+    color:            #E6EDF3 !important;
+    border-color:     #30363D !important;
+}
+
+/* Caption / help text inside inputs */
+.stTextInput label, .stTextArea label,
+.stFileUploader label, .stSelectbox label {
+    color: #E6EDF3 !important;
+}
 """
 
 def _inject_dark():
