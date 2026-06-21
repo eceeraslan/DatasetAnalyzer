@@ -1,4 +1,4 @@
-[server]
-enableXsrfProtection = false
-enableCORS = false
-maxUploadSize = 200
+
+
+[theme]
+primaryColor = "#1B4FCC"

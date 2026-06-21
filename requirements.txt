@@ -9,3 +9,4 @@ seaborn
 python-dotenv
 pypdf
 altair
+joblib

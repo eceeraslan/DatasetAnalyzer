@@ -41,6 +41,10 @@ reports/
 *.png
 *.jpg
 *.csv
+*.pkl
+
+
+data/
 
 
 *.log

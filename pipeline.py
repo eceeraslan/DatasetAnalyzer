@@ -3,6 +3,7 @@ from agents.planner_agent import planner_agent
 from agents.data_prep_agent import data_prep_agent
 from agents.modeling_agent import modeling_agent
 from agents.evaluator_agent import evaluator_agent
+from tools.session import set_data_dir
 
 
 def _safe_output(task) -> str:
@@ -12,7 +13,14 @@ def _safe_output(task) -> str:
         return str(task.output) if task.output else ""
 
 
-def run_pipeline(file_path: str, target_column: str = "", document_path: str = "") -> dict:
+def run_pipeline(file_path: str, target_column: str = "", document_path: str = "", data_dir: str = "data", on_step=None) -> dict:
+    set_data_dir(data_dir)
+
+    def _step_cb(next_idx):
+        def _cb(output):
+            if on_step:
+                on_step(next_idx)
+        return _cb
     planner = planner_agent()
     data_prep = data_prep_agent()
     modeling = modeling_agent()
@@ -47,6 +55,7 @@ def run_pipeline(file_path: str, target_column: str = "", document_path: str = "
             "(4) final problem type decision (classification/regression/clustering) with evidence-based justification."
         ),
         agent=planner,
+        callback=_step_cb(1),
     )
 
     doc_arg = (
@@ -69,6 +78,7 @@ def run_pipeline(file_path: str, target_column: str = "", document_path: str = "
             "column list, and a note of any missing-value sentinels that were detected and imputed."
         ),
         agent=data_prep,
+        callback=_step_cb(2),
     )
 
     target_instruction = (
@@ -79,13 +89,14 @@ def run_pipeline(file_path: str, target_column: str = "", document_path: str = "
 
     modeling_task = Task(
         description=(
-            "Train a machine learning model on the cleaned dataset at 'data/cleaned.csv'. "
+            f"Train a machine learning model on the cleaned dataset at '{data_dir}/cleaned.csv'. "
             f"Use the problem type identified by the planner. {target_instruction} "
             "Evaluate the model and produce a feature importance or cluster visualization."
         ),
         expected_output="A summary of the trained model, its evaluation score, and the path to the visualization.",
         agent=modeling,
         context=[planner_task],
+        callback=_step_cb(3),
     )
 
     evaluator_task = Task(

@@ -3,10 +3,10 @@ import re
 import json
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import LabelEncoder
 from crewai.tools import BaseTool
 from tools.io_utils import smart_read_csv
 from tools.document_reader import extract_document_text
+from tools.session import get_data_dir
 
 
 def _sentinels_from_document(document_path: str) -> list:
@@ -108,7 +108,6 @@ class DataCleanerTool(BaseTool):
     def _run(self, file_path: str, document_path: str = "data/description.txt") -> str:
         df = smart_read_csv(file_path)
         original_shape = df.shape
-        engineered = []
         sentinel_notes = []
 
         # Number of numeric columns after smart_read_csv has parsed comma-decimals
@@ -148,22 +147,6 @@ class DataCleanerTool(BaseTool):
                 )
                 break  # one dataset-wide sentinel is enough
 
-        # --- 0b) Feature engineering (applied only when the right columns exist) ---
-        name_col = next((c for c in df.columns if c.lower() == "name"), None)
-        if name_col is not None:
-            titles = df[name_col].astype(str).str.extract(r",\s*([^\.]+)\.", expand=False)
-            if titles.notna().mean() > 0.5:
-                common = {"Mr", "Mrs", "Miss", "Master"}
-                df["Title"] = titles.str.strip().apply(lambda t: t if t in common else "Rare")
-                engineered.append("Title")
-
-        sib = next((c for c in df.columns if c.lower() == "sibsp"), None)
-        par = next((c for c in df.columns if c.lower() == "parch"), None)
-        if sib is not None and par is not None:
-            df["FamilySize"] = df[sib] + df[par] + 1
-            df["IsAlone"] = (df["FamilySize"] == 1).astype(int)
-            engineered.extend(["FamilySize", "IsAlone"])
-
         # --- 1) Drop columns that are noise for modeling ---
         id_like = [
             c for c in df.columns
@@ -189,27 +172,25 @@ class DataCleanerTool(BaseTool):
             else:
                 df[col] = df[col].fillna(df[col].mode()[0])
 
-        # --- 3) Encode remaining categorical columns ---
-        for col in df.select_dtypes(exclude="number").columns:
-            df[col] = LabelEncoder().fit_transform(df[col])
-
-        # --- 4) Save ---
-        os.makedirs("data", exist_ok=True)
-        output_path = "data/cleaned.csv"
+        # --- 3) Save ---
+        data_dir = get_data_dir()
+        os.makedirs(data_dir, exist_ok=True)
+        output_path = os.path.join(data_dir, "cleaned.csv")
         df.to_csv(output_path, index=False)
 
         sentinel_block = (
             "Sentinel handling:\n  " + "\n  ".join(sentinel_notes)
             if sentinel_notes else "Sentinel handling: none detected."
         )
+        cat_cols = df.select_dtypes(exclude="number").columns.tolist()
         return (
             f"Cleaning complete. Saved to {output_path}\n"
             f"Original shape: {original_shape} -> Final shape: {df.shape}\n"
             f"Numeric parsing: {n_numeric_parsed} columns parsed as numeric "
             f"(comma-decimal values like '2,6' converted to 2.6 during loading).\n"
             f"{sentinel_block}\n"
-            f"Engineered features: {engineered if engineered else 'none'}\n"
             f"Dropped columns (identifier / high-cardinality): {to_drop if to_drop else 'none'}\n"
+            f"Categorical columns (will be one-hot encoded at modeling step): {cat_cols if cat_cols else 'none'}\n"
             f"Columns: {list(df.columns)}\n"
             f"Remaining missing values: {df.isnull().sum().sum()}"
         )

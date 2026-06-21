@@ -2,6 +2,7 @@ import json
 import os
 import pandas as pd
 from tools.io_utils import smart_read_csv
+from tools.session import get_data_dir
 from crewai.tools import BaseTool
 
 
@@ -13,16 +14,11 @@ class EvaluationTool(BaseTool):
         "before writing your final evaluation."
     )
 
-    def _run(self, file_path: str = "data/cleaned.csv") -> str:
+    def _run(self, file_path: str = "") -> str:
         report = []
-
-        # The cleaned dataset is always at this fixed path. Ignore any other path
-        # the caller may pass (e.g. the results JSON), so stats are never read
-        # from the wrong file.
-        cleaned_path = "data/cleaned.csv"
-
-        # Model metrics
-        results_path = "data/model_results.json"
+        data_dir = get_data_dir()
+        cleaned_path = os.path.join(data_dir, "cleaned.csv")
+        results_path = os.path.join(data_dir, "model_results.json")
         if os.path.exists(results_path):
             with open(results_path) as f:
                 results = json.load(f)
@@ -48,7 +44,7 @@ class EvaluationTool(BaseTool):
             report.append(f"WARNING: {cleaned_path} not found.")
 
         # Visualization check
-        plot_path = "data/feature_importance.png"
+        plot_path = os.path.join(data_dir, "feature_importance.png")
         if os.path.exists(plot_path):
             size_kb = os.path.getsize(plot_path) // 1024
             report.append(f"\n=== Visualization ===\n  feature_importance.png present ({size_kb} KB)")
