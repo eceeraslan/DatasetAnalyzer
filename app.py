@@ -2,7 +2,6 @@ import os
 import json
 import uuid
 import streamlit as st
-import streamlit.components.v1 as components
 import pandas as pd
 from tools.io_utils import smart_read_csv
 
@@ -15,146 +14,8 @@ st.set_page_config(
 # ---------- Session ----------
 if "session_id" not in st.session_state:
     st.session_state.session_id = uuid.uuid4().hex[:8]
-if "dark_mode" not in st.session_state:
-    st.session_state.dark_mode = False
 
 DATA_DIR = f"data/{st.session_state.session_id}"
-
-# ---------- Dark mode via JS parent-window injection ----------
-# Streamlit uses CSS-in-JS (styled-components) so regular st.markdown CSS gets
-# overridden after render. We inject into the parent document via an iframe and
-# use a MutationObserver to re-append our style after every Streamlit re-render.
-
-_DARK_CSS = """
-.stApp                                       { background-color: #0D1117 !important; }
-section[data-testid="stSidebar"]             { background-color: #161B22 !important; }
-[data-testid="stHeader"]                     { background-color: #0D1117 !important; }
-.stApp p, .stApp h1, .stApp h2, .stApp h3,
-.stApp h4, .stApp h5, .stApp h6, .stApp li,
-.stApp span, .stApp label,
-[data-testid="stMarkdownContainer"] *,
-[data-testid="stCaptionContainer"] *        { color: #E6EDF3 !important; }
-[data-testid="stMetricValue"]               { color: #79C0FF !important; }
-[data-testid="stMetricLabel"]               { color: #8B949E !important; }
-[data-testid="stVerticalBlockBorderWrapper"] {
-    background-color: #161B22 !important;
-    border-color:     #30363D !important;
-}
-.stTextInput input, .stTextArea textarea    {
-    background-color: #21262D !important;
-    color:            #E6EDF3 !important;
-    border-color:     #30363D !important;
-}
-[data-testid="stExpander"]                  { background-color: #161B22 !important; }
-[data-testid="stExpander"] *               { color: #E6EDF3 !important; }
-[data-testid="stFileUploaderDropzone"]      {
-    background-color: #21262D !important;
-    border-color:     #30363D !important;
-}
-[data-testid="stFileUploaderDropzone"] *   { color: #E6EDF3 !important; }
-.stTabs [role="tab"]                        { color: #8B949E !important; }
-.stTabs [role="tab"][aria-selected="true"]  { color: #79C0FF !important; }
-hr                                          { border-color: #30363D !important; }
-[data-testid="stAlert"] *                  { color: #E6EDF3 !important; }
-
-/* Secondary buttons (e.g. file uploader "Upload", download buttons) */
-[data-testid="stBaseButton-secondary"],
-.stDownloadButton button,
-[data-testid="stFileUploaderDropzone"] button {
-    background-color: #21262D !important;
-    color:            #E6EDF3 !important;
-    border:           1px solid #30363D !important;
-}
-[data-testid="stBaseButton-secondary"]:hover,
-.stDownloadButton button:hover {
-    background-color: #30363D !important;
-    border-color:     #79C0FF !important;
-}
-
-/* DataFrame / table */
-[data-testid="stDataFrame"],
-[data-testid="stDataFrame"] * {
-    background-color: #161B22 !important;
-    color:            #E6EDF3 !important;
-}
-[data-testid="stDataFrame"] [role="columnheader"] {
-    background-color: #21262D !important;
-    color:            #E6EDF3 !important;
-}
-
-/* Selectbox / dropdown inputs */
-.stSelectbox div[data-baseweb="select"] > div {
-    background-color: #21262D !important;
-    color:            #E6EDF3 !important;
-    border-color:     #30363D !important;
-}
-
-/* Caption / help text inside inputs */
-.stTextInput label, .stTextArea label,
-.stFileUploader label, .stSelectbox label {
-    color: #E6EDF3 !important;
-}
-
-/* Uploaded-file display (the box showing the file name after upload) */
-[data-testid="stFileUploaderFile"],
-[data-testid="stFileUploaderFile"] *,
-[data-testid="stFileUploaderFileName"],
-[data-testid="stFileUploaderDeleteBtn"] * {
-    background-color: #21262D !important;
-    color:            #E6EDF3 !important;
-}
-[data-testid="stFileUploaderFile"] {
-    border: 1px solid #30363D !important;
-    border-radius: 5px !important;
-}
-"""
-
-def _inject_dark():
-    escaped = _DARK_CSS.replace("`", r"\`")
-    components.html(f"""
-    <script>
-    (function() {{
-        const CSS = `{escaped}`;
-        const doc = window.parent.document;
-
-        function applyDark() {{
-            let el = doc.getElementById('__insightforge_dark');
-            if (!el) {{
-                el = doc.createElement('style');
-                el.id = '__insightforge_dark';
-            }}
-            el.textContent = CSS;
-            doc.head.appendChild(el);   // always re-append to stay last
-        }}
-
-        applyDark();
-
-        // Re-apply after every Streamlit re-render (styled-components injection)
-        new MutationObserver(function(mutations) {{
-            for (var m of mutations) {{
-                for (var n of m.addedNodes) {{
-                    if (n.id !== '__insightforge_dark') {{ applyDark(); return; }}
-                }}
-            }}
-        }}).observe(doc.head, {{ childList: true }});
-    }})();
-    </script>
-    """, height=0)
-
-def _remove_dark():
-    components.html("""
-    <script>
-    (function() {
-        var el = window.parent.document.getElementById('__insightforge_dark');
-        if (el) el.remove();
-    })();
-    </script>
-    """, height=0)
-
-if st.session_state.dark_mode:
-    _inject_dark()
-else:
-    _remove_dark()
 
 # ---------- Step bar ----------
 _STEPS = ["Planner", "Data Preparation", "Modeling", "Evaluation"]
@@ -162,7 +23,7 @@ _STEPS = ["Planner", "Data Preparation", "Modeling", "Evaluation"]
 def _render_steps(active: int):
     cols = st.columns(len(_STEPS))
     for i, (col, step) in enumerate(zip(cols, _STEPS)):
-        done    = i < active
+        done = i < active
         current = i == active
         if done:
             col.markdown(
@@ -214,9 +75,6 @@ with st.sidebar:
         disabled=uploaded_file is None,
         use_container_width=True,
     )
-
-    st.divider()
-    st.toggle("Dark mode", key="dark_mode")
 
 # ---------- Header ----------
 st.title("InsightForge")
